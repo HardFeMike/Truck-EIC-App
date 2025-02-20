@@ -18,13 +18,21 @@ if dispatcher_file and zfnqstate_file:
         filtered_trucks = dispatcher_df[dispatcher_df["Unit Identification Code"] == selected_uic]
         st.write("### Available Trucks:")
         
-        # Create a dropdown for each truck to select a qualified driver
         for index, row in filtered_trucks.iterrows():
-            eic_code = row["Admin No."]
-            eligible_drivers = zfnqstate_df[(zfnqstate_df["EIC/Abr"] == eic_code) & (zfnqstate_df["Qualification"] == "STANDARD")]
+            admin_no = row["Admin No."]
+            eligible_drivers = zfnqstate_df[(zfnqstate_df["EIC/Abr"] == admin_no) & (zfnqstate_df["Qualification"] == "STANDARD")]
             
-            driver_options = ["Select Driver"] + list(eligible_drivers["Name"].unique())
-            selected_driver = st.selectbox(f"Select Driver for {row['Material Description']} ({row['Model number']})", driver_options, key=f"driver_{index}")
+            uic_options = ["Select UIC"] + list(eligible_drivers["UIC"].dropna().unique())
+            selected_driver_uic = st.selectbox(f"Select UIC for Truck {admin_no}", uic_options, key=f"uic_{index}")
+            
+            if selected_driver_uic != "Select UIC":
+                filtered_drivers = eligible_drivers[eligible_drivers["UIC"] == selected_driver_uic]
+                driver_options = ["Select Driver"] + list(filtered_drivers["Name"].unique())
+                selected_driver = st.selectbox(f"Select Driver for Truck {admin_no}", driver_options, key=f"driver_{index}")
+                
+                if selected_driver != "Select Driver":
+                    personal_number = filtered_drivers[filtered_drivers["Name"] == selected_driver]["ID rel.obj"].values[0]
+                    st.text_input(f"Personal Number for {selected_driver}", personal_number, key=f"personal_{index}")
         
         st.write("### Qualified Personnel:")
         st.dataframe(zfnqstate_df[["Name", "EIC/Abr", "Qualification", "Proficiency"]])
