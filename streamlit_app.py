@@ -1,6 +1,8 @@
 import streamlit as st
 import pandas as pd
 
+st.set_page_config(layout="wide")  # Enables full-width layout
+
 st.title("Truck EIC Qualification App")
 
 st.sidebar.header("Upload Data")
@@ -13,14 +15,14 @@ if dispatcher_file and zfnqstate_file:
     
     static_uics = ["WPPTA0", "WPPTB0", "WPPTC0", "WPPTT0", "WPCPD0"]
     
-    # Display all trucks in a horizontal format
+    # Display all trucks in a horizontal format with tighter spacing
     st.write("### Available Trucks")
     
     for index, row in dispatcher_df.iterrows():
         eic_value = row["Functional Location"][:3] if isinstance(row["Functional Location"], str) else "UNKNOWN"
         
         with st.container():
-            col1, col2, col3, col4 = st.columns([2, 2, 2, 2])
+            col1, col2, col3, col4 = st.columns([1.5, 1.5, 1.5, 1.5], gap="small")  # Reduce column width & spacing
             
             with col1:
                 st.write(f"**Truck:** {row['Admin No.']}")
