@@ -26,10 +26,14 @@ if dispatcher_file and zfnqstate_file:
         driver_names = eligible_drivers["Name"].tolist()
         driver_names.insert(0, "Select Driver")  # Add default option
         
+        uic_options = sorted(set(eligible_drivers["UIC"].dropna().unique()).union(static_uics))
+        uic_options.insert(0, "Select UIC")
+        
         # Add row to trucks data
         trucks_data.append({
             "Admin No.": admin_no,
             "EIC": eic_value,
+            "Select UIC": "Select UIC",
             "Select Driver": "Select Driver",
             "Available Drivers": driver_names,
             "Personal Number": ""
@@ -41,6 +45,7 @@ if dispatcher_file and zfnqstate_file:
     # Display interactive table
     edited_trucks_df = st.data_editor(trucks_df, 
                                       column_config={
+                                          "Select UIC": st.column_config.SelectboxColumn("Select UIC", options=trucks_df["Select UIC"].tolist()),
                                           "Select Driver": st.column_config.SelectboxColumn("Select Driver", options=trucks_df["Available Drivers"].tolist()),
                                           "Personal Number": st.column_config.TextColumn("Personal Number")
                                       },
