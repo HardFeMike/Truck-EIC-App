@@ -11,18 +11,23 @@ if dispatcher_file and zfnqstate_file:
     dispatcher_df = pd.read_excel(dispatcher_file)
     zfnqstate_df = pd.read_excel(zfnqstate_file)
     
-    uic_list = dispatcher_df["Unit Identification Code"].dropna().unique()
-    selected_uic = st.selectbox("Select UIC", ["Select"] + list(uic_list))
+    static_uics = ["WPPTA0", "WPPTB0", "WPPTC0", "WPPTT0", "WPCPD0"]
+    uic_list = sorted(set(dispatcher_df["Unit Identification Code"].dropna().unique()).union(static_uics))
+    selected_uic = st.selectbox("Select UIC", ["ALL"] + ["Select"] + list(uic_list))
     
     if selected_uic != "Select":
-        filtered_trucks = dispatcher_df[dispatcher_df["Unit Identification Code"] == selected_uic]
+        if selected_uic == "ALL":
+            filtered_trucks = dispatcher_df
+        else:
+            filtered_trucks = dispatcher_df[dispatcher_df["Unit Identification Code"] == selected_uic]
+        
         st.write("### Available Trucks:")
         
         for index, row in filtered_trucks.iterrows():
             admin_no = row["Admin No."]
             eligible_drivers = zfnqstate_df[(zfnqstate_df["EIC/Abr"] == admin_no) & (zfnqstate_df["Qualification"] == "STANDARD")]
             
-            uic_options = ["Select UIC"] + list(eligible_drivers["UIC"].dropna().unique()) if not eligible_drivers.empty else ["No UICs Available"]
+            uic_options = ["Select UIC"] + static_uics if not eligible_drivers.empty else ["No UICs Available"]
             selected_driver_uic = st.selectbox(f"Select UIC for Truck {admin_no}", uic_options, key=f"uic_{index}")
             
             if selected_driver_uic != "Select UIC" and selected_driver_uic != "No UICs Available":
