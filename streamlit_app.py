@@ -1,3 +1,4 @@
+
 import streamlit as st
 import pandas as pd
 
@@ -12,7 +13,6 @@ if dispatcher_file and zfnqstate_file:
     zfnqstate_df = pd.read_excel(zfnqstate_file)
     
     static_uics = ["WPPTA0", "WPPTB0", "WPPTC0", "WPPTT0", "WPCPD0"]
-    uic_list = sorted(set(dispatcher_df["Unit Identification Code"].dropna().unique()).union(static_uics))
     
     # Prepare the editable dataframe
     trucks_data = []
@@ -26,8 +26,8 @@ if dispatcher_file and zfnqstate_file:
         driver_names = eligible_drivers["Name"].tolist()
         driver_names.insert(0, "Select Driver")  # Add default option
         
-        uic_options = sorted(set(eligible_drivers["UIC"].dropna().unique()).union(static_uics))
-        uic_options.insert(0, "Select UIC")
+        # Use the static UIC options
+        uic_options = static_uics
         
         # Add row to trucks data
         trucks_data.append({
@@ -45,7 +45,7 @@ if dispatcher_file and zfnqstate_file:
     # Display interactive table
     edited_trucks_df = st.data_editor(trucks_df, 
                                       column_config={
-                                          "Select UIC": st.column_config.SelectboxColumn("Select UIC", options=trucks_df["Select UIC"].tolist()),
+                                          "Select UIC": st.column_config.SelectboxColumn("Select UIC", options=static_uics),
                                           "Select Driver": st.column_config.SelectboxColumn("Select Driver", options=trucks_df["Available Drivers"].tolist()),
                                           "Personal Number": st.column_config.TextColumn("Personal Number")
                                       },
