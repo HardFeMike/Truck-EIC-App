@@ -40,11 +40,14 @@ if dispatcher_file and zfnqstate_file:
     # Convert to DataFrame for editable table
     trucks_df = pd.DataFrame(trucks_data)
     
+    # Precompute driver options for each row
+    trucks_df["Driver Options"] = trucks_df["Available Drivers"].apply(lambda x: x if isinstance(x, list) else ["Select Driver"])
+    
     # Display interactive table
     edited_trucks_df = st.data_editor(trucks_df, 
                                       column_config={
                                           "Select UIC": st.column_config.SelectboxColumn("Select UIC", options=static_uics),
-                                          "Select Driver": st.column_config.SelectboxColumn("Select Driver", options=lambda row: row["Available Drivers"] if isinstance(row["Available Drivers"], list) else ["Select Driver"]),
+                                          "Select Driver": st.column_config.SelectboxColumn("Select Driver", options=trucks_df["Driver Options"].tolist()),
                                           "Personal Number": st.column_config.TextColumn("Personal Number")
                                       },
                                       hide_index=True)
