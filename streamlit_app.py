@@ -1,4 +1,3 @@
-
 import streamlit as st
 import pandas as pd
 
@@ -26,7 +25,6 @@ if dispatcher_file and zfnqstate_file:
         driver_names = eligible_drivers["Name"].tolist()
         driver_names.insert(0, "Select Driver")  # Add default option
         
-        # Use the static UIC options
         uic_options = static_uics
         
         # Add row to trucks data
@@ -46,7 +44,7 @@ if dispatcher_file and zfnqstate_file:
     edited_trucks_df = st.data_editor(trucks_df, 
                                       column_config={
                                           "Select UIC": st.column_config.SelectboxColumn("Select UIC", options=static_uics),
-                                          "Select Driver": st.column_config.SelectboxColumn("Select Driver", options=trucks_df["Available Drivers"].tolist()),
+                                          "Select Driver": st.column_config.SelectboxColumn("Select Driver", options=lambda row: row["Available Drivers"] if isinstance(row["Available Drivers"], list) else ["Select Driver"]),
                                           "Personal Number": st.column_config.TextColumn("Personal Number")
                                       },
                                       hide_index=True)
