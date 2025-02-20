@@ -25,13 +25,25 @@ if dispatcher_file and zfnqstate_file:
         
         for index, row in filtered_trucks.iterrows():
             admin_no = row["Admin No."]
-            eic_value = row["Functional Location"][:3] if "Functional Location" in row else admin_no  # Extract first 3 letters as EIC
+            eic_value = row["Functional Location"][:3] if "Functional Location" in row and isinstance(row["Functional Location"], str) else "UNKNOWN"
             
             # Debugging Output
             st.write(f"🔍 Checking Truck: {admin_no}")
             st.write(f"🔍 Expected EIC: {eic_value}")
             
-            eligible_drivers = zfnqstate_df[(zfnqstate_df["EIC/Abr"] == eic_value) & (zfnqstate_df["Qualification"] == "STANDARD")]
+            # Handle float issue in EIC values
+            if isinstance(eic_value, float):
+                st.write(f"⚠ Warning: EIC value for {admin_no} is a float, converting to string.")
+                eic_value = str(int(eic_value))
+            
+            # Debugging: Show all unique EIC/Abr values from ZFNQState
+            st.write("🔍 Unique EIC/Abr in ZFNQState:")
+            st.write(zfnqstate_df["EIC/Abr"].unique())
+            
+            eligible_drivers = zfnqstate_df[
+                (zfnqstate_df["EIC/Abr"].astype(str).str.strip() == str(eic_value).strip()) &
+                (zfnqstate_df["Qualification"].astype(str).str.upper() == "STANDARD")
+            ]
             
             st.write("🔍 Eligible Drivers:")
             st.write(eligible_drivers)
