@@ -1,7 +1,7 @@
 import streamlit as st
 import pandas as pd
 
-st.title("Truck EIC Qualification App - Excel View")
+st.title("Truck EIC Qualification App")
 
 st.sidebar.header("Upload Data")
 dispatcher_file = st.sidebar.file_uploader("Upload 'The Dispatcher' Excel", type=["xlsx"])
@@ -13,55 +13,31 @@ if dispatcher_file and zfnqstate_file:
     
     static_uics = ["WPPTA0", "WPPTB0", "WPPTC0", "WPPTT0", "WPCPD0"]
     
-    # Prepare the editable dataframe
-    trucks_data = []
+    # Select UIC
+    selected_uic = st.selectbox("Select UIC", ["Select UIC"] + static_uics)
     
-    for _, row in dispatcher_df.iterrows():
-        admin_no = row["Admin No."]
-        eic_value = row["Functional Location"][:3] if "Functional Location" in row and isinstance(row["Functional Location"], str) else "UNKNOWN"
+    if selected_uic != "Select UIC":
+        # Filter eligible trucks based on selected UIC
+        filtered_trucks = dispatcher_df.copy()
         
-        # Find eligible drivers
-        eligible_drivers = zfnqstate_df[zfnqstate_df["EIC/Abr"].astype(str).str.strip() == str(eic_value).strip()]
+        # Select Truck
+        selected_truck = st.selectbox("Select Truck", ["Select Truck"] + filtered_trucks["Admin No."].dropna().unique().tolist())
         
-        # Store drivers grouped by UIC
-        driver_dict = {}
-        for uic in static_uics:
-            filtered_drivers = eligible_drivers[eligible_drivers["UIC"] == uic]["Name"].tolist()
-            driver_dict[uic] = ["Select Driver"] + filtered_drivers if filtered_drivers else ["No Qualified Drivers"]
-        
-        # Add row to trucks data
-        trucks_data.append({
-            "Admin No.": admin_no,
-            "EIC": eic_value,
-            "Select UIC": "Select UIC",
-            "Select Driver": "Select Driver",
-            "Driver Options": driver_dict,
-            "Personal Number": ""
-        })
+        if selected_truck != "Select Truck":
+            # Get EIC value for the selected truck
+            eic_value = dispatcher_df.loc[dispatcher_df["Admin No."] == selected_truck, "Functional Location"].astype(str).str[:3].values[0]
+            
+            # Get eligible drivers based on UIC and EIC
+            eligible_drivers = zfnqstate_df[(zfnqstate_df["EIC/Abr"].astype(str).str.strip() == str(eic_value).strip()) & (zfnqstate_df["UIC"] == selected_uic)]
+            
+            driver_options = ["Select Driver"] + eligible_drivers["Name"].dropna().unique().tolist()
+            selected_driver = st.selectbox("Select Driver", driver_options)
+            
+            if selected_driver != "Select Driver":
+                personal_number = eligible_drivers.loc[eligible_drivers["Name"] == selected_driver, "ID rel.obj"].values[0]
+                st.text_input("Personal Number", personal_number)
     
-    # Convert to DataFrame for editable table
-    trucks_df = pd.DataFrame(trucks_data)
-    
-    # Function to get driver options dynamically
-    def get_driver_options(row):
-        selected_uic = row["Select UIC"]
-        return row["Driver Options"].get(selected_uic, ["Select Driver"])
-    
-    # Apply dynamic filtering function
-    trucks_df["Filtered Driver Options"] = trucks_df.apply(get_driver_options, axis=1)
-    
-    # Display interactive table with dynamic driver dropdown
-    edited_trucks_df = st.data_editor(
-        trucks_df, 
-        column_config={
-            "Select UIC": st.column_config.SelectboxColumn("Select UIC", options=static_uics),
-            "Select Driver": st.column_config.SelectboxColumn("Select Driver", options=trucks_df["Filtered Driver Options"].tolist()),
-            "Personal Number": st.column_config.TextColumn("Personal Number")
-        },
-        hide_index=True
-    )
-    
-    # Allow Download of Edited Data
+    # Allow Download of Filtered Data
     if st.button("Download Updated Data"):
-        edited_trucks_df.to_excel("Updated_Truck_Assignments.xlsx", index=False)
+        filtered_trucks.to_excel("Updated_Truck_Assignments.xlsx", index=False)
         st.success("Download Ready! Check your files.")
