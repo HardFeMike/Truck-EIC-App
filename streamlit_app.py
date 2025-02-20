@@ -25,7 +25,7 @@ if dispatcher_file and zfnqstate_file:
         
         for index, row in filtered_trucks.iterrows():
             admin_no = row["Admin No."]
-            eic_value = row["Functional Area"][:3] if "Functional Area" in row else admin_no  # Extract first 3 letters as EIC
+            eic_value = row["Functional Location"][:3] if "Functional Location" in row else admin_no  # Extract first 3 letters as EIC
             
             # Debugging Output
             st.write(f"🔍 Checking Truck: {admin_no}")
