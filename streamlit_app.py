@@ -25,7 +25,8 @@ if dispatcher_file and zfnqstate_file:
         
         for index, row in filtered_trucks.iterrows():
             admin_no = row["Admin No."]
-            eligible_drivers = zfnqstate_df[(zfnqstate_df["EIC/Abr"] == admin_no) & (zfnqstate_df["Qualification"] == "STANDARD")]
+            eic_value = row["EIC/Abr"] if "EIC/Abr" in row else admin_no  # Ensure correct EIC lookup
+            eligible_drivers = zfnqstate_df[(zfnqstate_df["EIC/Abr"] == eic_value) & (zfnqstate_df["Qualification"] == "STANDARD")]
             
             uic_options = ["Select UIC"] + static_uics if not eligible_drivers.empty else ["No UICs Available"]
             selected_driver_uic = st.selectbox(f"Select UIC for Truck {admin_no}", uic_options, key=f"uic_{index}")
