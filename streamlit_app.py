@@ -13,31 +13,30 @@ if dispatcher_file and zfnqstate_file:
     
     static_uics = ["WPPTA0", "WPPTB0", "WPPTC0", "WPPTT0", "WPCPD0"]
     
-    # Select UIC
-    selected_uic = st.selectbox("Select UIC", ["Select UIC"] + static_uics)
+    # Display all trucks in a grid format
+    st.write("### Available Trucks")
+    columns = st.columns(4)  # Adjust the number to control how many trucks per row
     
-    if selected_uic != "Select UIC":
-        # Filter eligible trucks based on selected UIC
-        filtered_trucks = dispatcher_df.copy()
+    for index, row in dispatcher_df.iterrows():
+        col = columns[index % len(columns)]  # Distribute trucks across columns
         
-        # Select Truck
-        selected_truck = st.selectbox("Select Truck", ["Select Truck"] + filtered_trucks["Admin No."].dropna().unique().tolist())
-        
-        if selected_truck != "Select Truck":
-            # Get EIC value for the selected truck
-            eic_value = dispatcher_df.loc[dispatcher_df["Admin No."] == selected_truck, "Functional Location"].astype(str).str[:3].values[0]
+        with col:
+            st.write(f"**Truck:** {row['Admin No.']}")
+            eic_value = row["Functional Location"][:3] if isinstance(row["Functional Location"], str) else "UNKNOWN"
+            st.write(f"EIC: {eic_value}")
             
-            # Get eligible drivers based on UIC and EIC
+            selected_uic = st.selectbox(f"Select UIC for {row['Admin No.']}", static_uics, key=f"uic_{index}")
+            
             eligible_drivers = zfnqstate_df[(zfnqstate_df["EIC/Abr"].astype(str).str.strip() == str(eic_value).strip()) & (zfnqstate_df["UIC"] == selected_uic)]
-            
             driver_options = ["Select Driver"] + eligible_drivers["Name"].dropna().unique().tolist()
-            selected_driver = st.selectbox("Select Driver", driver_options)
+            selected_driver = st.selectbox(f"Select Driver for {row['Admin No.']}", driver_options, key=f"driver_{index}")
             
             if selected_driver != "Select Driver":
                 personal_number = eligible_drivers.loc[eligible_drivers["Name"] == selected_driver, "ID rel.obj"].values[0]
-                st.text_input("Personal Number", personal_number)
+                st.text_input(f"Personal Number for {selected_driver}", personal_number, key=f"personal_{index}")
     
     # Allow Download of Filtered Data
     if st.button("Download Updated Data"):
-        filtered_trucks.to_excel("Updated_Truck_Assignments.xlsx", index=False)
+        dispatcher_df.to_excel("Updated_Truck_Assignments.xlsx", index=False)
         st.success("Download Ready! Check your files.")
+        
