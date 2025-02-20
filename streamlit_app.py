@@ -22,10 +22,12 @@ if dispatcher_file and zfnqstate_file:
         
         # Find eligible drivers
         eligible_drivers = zfnqstate_df[zfnqstate_df["EIC/Abr"].astype(str).str.strip() == str(eic_value).strip()]
-        driver_names = eligible_drivers["Name"].tolist()
-        driver_names.insert(0, "Select Driver")  # Add default option
         
-        uic_options = static_uics
+        # Store drivers grouped by UIC
+        driver_dict = {}
+        for uic in static_uics:
+            filtered_drivers = eligible_drivers[eligible_drivers["UIC"] == uic]["Name"].tolist()
+            driver_dict[uic] = ["Select Driver"] + filtered_drivers if filtered_drivers else ["No Qualified Drivers"]
         
         # Add row to trucks data
         trucks_data.append({
@@ -33,24 +35,31 @@ if dispatcher_file and zfnqstate_file:
             "EIC": eic_value,
             "Select UIC": "Select UIC",
             "Select Driver": "Select Driver",
-            "Available Drivers": driver_names,
+            "Driver Options": driver_dict,
             "Personal Number": ""
         })
     
     # Convert to DataFrame for editable table
     trucks_df = pd.DataFrame(trucks_data)
     
-    # Precompute driver options for each row
-    trucks_df["Driver Options"] = trucks_df["Available Drivers"].apply(lambda x: x if isinstance(x, list) else ["Select Driver"])
+    # Function to get driver options dynamically
+    def get_driver_options(row):
+        selected_uic = row["Select UIC"]
+        return row["Driver Options"].get(selected_uic, ["Select Driver"])
     
-    # Display interactive table
-    edited_trucks_df = st.data_editor(trucks_df, 
-                                      column_config={
-                                          "Select UIC": st.column_config.SelectboxColumn("Select UIC", options=static_uics),
-                                          "Select Driver": st.column_config.SelectboxColumn("Select Driver", options=trucks_df["Driver Options"].tolist()),
-                                          "Personal Number": st.column_config.TextColumn("Personal Number")
-                                      },
-                                      hide_index=True)
+    # Apply dynamic filtering function
+    trucks_df["Filtered Driver Options"] = trucks_df.apply(get_driver_options, axis=1)
+    
+    # Display interactive table with dynamic driver dropdown
+    edited_trucks_df = st.data_editor(
+        trucks_df, 
+        column_config={
+            "Select UIC": st.column_config.SelectboxColumn("Select UIC", options=static_uics),
+            "Select Driver": st.column_config.SelectboxColumn("Select Driver", options=trucks_df["Filtered Driver Options"].tolist()),
+            "Personal Number": st.column_config.TextColumn("Personal Number")
+        },
+        hide_index=True
+    )
     
     # Allow Download of Edited Data
     if st.button("Download Updated Data"):
