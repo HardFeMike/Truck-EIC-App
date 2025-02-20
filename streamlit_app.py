@@ -27,32 +27,13 @@ if dispatcher_file and zfnqstate_file:
             admin_no = row["Admin No."]
             eic_value = row["Functional Location"][:3] if "Functional Location" in row and isinstance(row["Functional Location"], str) else "UNKNOWN"
             
-            # Debugging Output
-            st.write(f"🔍 Checking Truck: {admin_no}")
-            st.write(f"🔍 Expected EIC: {eic_value}")
-            
-            # Handle float issue in EIC values
-            if isinstance(eic_value, float):
-                st.write(f"⚠ Warning: EIC value for {admin_no} is a float, converting to string.")
-                eic_value = str(int(eic_value))
-            
-            # Debugging: Show all unique EIC/Abr values from ZFNQState
-            st.write("🔍 Unique EIC/Abr in ZFNQState:")
-            st.write(zfnqstate_df["EIC/Abr"].unique())
-            
             eligible_drivers = zfnqstate_df[zfnqstate_df["EIC/Abr"].astype(str).str.strip() == str(eic_value).strip()]
-            
-            st.write("🔍 Eligible Drivers:")
-            st.write(eligible_drivers)
             
             uic_options = ["Select UIC"] + static_uics if not eligible_drivers.empty else ["No UICs Available"]
             selected_driver_uic = st.selectbox(f"Select UIC for Truck {admin_no}", uic_options, key=f"uic_{index}")
             
             if selected_driver_uic != "Select UIC" and selected_driver_uic != "No UICs Available":
                 filtered_drivers = eligible_drivers[eligible_drivers["UIC"] == selected_driver_uic]
-                
-                st.write("🔍 Filtered Drivers Based on UIC:")
-                st.write(filtered_drivers)
                 
                 driver_options = ["Select Driver"] + list(filtered_drivers["Name"].unique()) if not filtered_drivers.empty else ["No Drivers Available"]
                 selected_driver = st.selectbox(f"Select Driver for Truck {admin_no}", driver_options, key=f"driver_{index}")
@@ -67,4 +48,3 @@ if dispatcher_file and zfnqstate_file:
     if st.button("Download Filtered Data"):
         filtered_trucks.to_excel("Filtered_Trucks.xlsx", index=False)
         st.success("Download Ready! Check your files.")
-
