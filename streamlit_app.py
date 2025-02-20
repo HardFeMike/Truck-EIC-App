@@ -40,10 +40,7 @@ if dispatcher_file and zfnqstate_file:
             st.write("🔍 Unique EIC/Abr in ZFNQState:")
             st.write(zfnqstate_df["EIC/Abr"].unique())
             
-            eligible_drivers = zfnqstate_df[
-                (zfnqstate_df["EIC/Abr"].astype(str).str.strip() == str(eic_value).strip()) &
-                (zfnqstate_df["Qualification"].astype(str).str.upper() == "STANDARD")
-            ]
+            eligible_drivers = zfnqstate_df[zfnqstate_df["EIC/Abr"].astype(str).str.strip() == str(eic_value).strip()]
             
             st.write("🔍 Eligible Drivers:")
             st.write(eligible_drivers)
@@ -70,3 +67,4 @@ if dispatcher_file and zfnqstate_file:
     if st.button("Download Filtered Data"):
         filtered_trucks.to_excel("Filtered_Trucks.xlsx", index=False)
         st.success("Download Ready! Check your files.")
+
