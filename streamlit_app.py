@@ -25,14 +25,26 @@ if dispatcher_file and zfnqstate_file:
         
         for index, row in filtered_trucks.iterrows():
             admin_no = row["Admin No."]
-            eic_value = row["EIC/Abr"] if "EIC/Abr" in row else admin_no  # Ensure correct EIC lookup
+            eic_value = dispatcher_df.loc[dispatcher_df["Admin No."] == admin_no, "EIC/Abr"].values[0] if "EIC/Abr" in dispatcher_df.columns else admin_no
+            
+            # Debugging Output
+            st.write(f"🔍 Checking Truck: {admin_no}")
+            st.write(f"🔍 Expected EIC: {eic_value}")
+            
             eligible_drivers = zfnqstate_df[(zfnqstate_df["EIC/Abr"] == eic_value) & (zfnqstate_df["Qualification"] == "STANDARD")]
+            
+            st.write("🔍 Eligible Drivers:")
+            st.write(eligible_drivers)
             
             uic_options = ["Select UIC"] + static_uics if not eligible_drivers.empty else ["No UICs Available"]
             selected_driver_uic = st.selectbox(f"Select UIC for Truck {admin_no}", uic_options, key=f"uic_{index}")
             
             if selected_driver_uic != "Select UIC" and selected_driver_uic != "No UICs Available":
                 filtered_drivers = eligible_drivers[eligible_drivers["UIC"] == selected_driver_uic]
+                
+                st.write("🔍 Filtered Drivers Based on UIC:")
+                st.write(filtered_drivers)
+                
                 driver_options = ["Select Driver"] + list(filtered_drivers["Name"].unique()) if not filtered_drivers.empty else ["No Drivers Available"]
                 selected_driver = st.selectbox(f"Select Driver for Truck {admin_no}", driver_options, key=f"driver_{index}")
                 
