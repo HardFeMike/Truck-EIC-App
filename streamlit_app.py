@@ -1,7 +1,7 @@
 import streamlit as st
 import pandas as pd
 
-st.title("Truck EIC Qualification App")
+st.title("Truck EIC Qualification App - Excel View")
 
 st.sidebar.header("Upload Data")
 dispatcher_file = st.sidebar.file_uploader("Upload 'The Dispatcher' Excel", type=["xlsx"])
@@ -13,38 +13,40 @@ if dispatcher_file and zfnqstate_file:
     
     static_uics = ["WPPTA0", "WPPTB0", "WPPTC0", "WPPTT0", "WPCPD0"]
     uic_list = sorted(set(dispatcher_df["Unit Identification Code"].dropna().unique()).union(static_uics))
-    selected_uic = st.selectbox("Select UIC", ["ALL"] + ["Select"] + list(uic_list))
     
-    if selected_uic != "Select":
-        if selected_uic == "ALL":
-            filtered_trucks = dispatcher_df
-        else:
-            filtered_trucks = dispatcher_df[dispatcher_df["Unit Identification Code"] == selected_uic]
-        
-        st.write("### Available Trucks:")
-        
-        for index, row in filtered_trucks.iterrows():
-            admin_no = row["Admin No."]
-            eic_value = row["Functional Location"][:3] if "Functional Location" in row and isinstance(row["Functional Location"], str) else "UNKNOWN"
-            
-            eligible_drivers = zfnqstate_df[zfnqstate_df["EIC/Abr"].astype(str).str.strip() == str(eic_value).strip()]
-            
-            uic_options = ["Select UIC"] + static_uics if not eligible_drivers.empty else ["No UICs Available"]
-            selected_driver_uic = st.selectbox(f"Select UIC for Truck {admin_no}", uic_options, key=f"uic_{index}")
-            
-            if selected_driver_uic != "Select UIC" and selected_driver_uic != "No UICs Available":
-                filtered_drivers = eligible_drivers[eligible_drivers["UIC"] == selected_driver_uic]
-                
-                driver_options = ["Select Driver"] + list(filtered_drivers["Name"].unique()) if not filtered_drivers.empty else ["No Drivers Available"]
-                selected_driver = st.selectbox(f"Select Driver for Truck {admin_no}", driver_options, key=f"driver_{index}")
-                
-                if selected_driver != "Select Driver" and selected_driver != "No Drivers Available":
-                    personal_number = filtered_drivers[filtered_drivers["Name"] == selected_driver]["ID rel.obj"].values[0]
-                    st.text_input(f"Personal Number for {selected_driver}", personal_number, key=f"personal_{index}")
-        
-        st.write("### Qualified Personnel:")
-        st.dataframe(zfnqstate_df[["Name", "EIC/Abr", "Qualification", "Proficiency"]])
+    # Prepare the editable dataframe
+    trucks_data = []
     
-    if st.button("Download Filtered Data"):
-        filtered_trucks.to_excel("Filtered_Trucks.xlsx", index=False)
+    for _, row in dispatcher_df.iterrows():
+        admin_no = row["Admin No."]
+        eic_value = row["Functional Location"][:3] if "Functional Location" in row and isinstance(row["Functional Location"], str) else "UNKNOWN"
+        
+        # Find eligible drivers
+        eligible_drivers = zfnqstate_df[zfnqstate_df["EIC/Abr"].astype(str).str.strip() == str(eic_value).strip()]
+        driver_names = eligible_drivers["Name"].tolist()
+        driver_names.insert(0, "Select Driver")  # Add default option
+        
+        # Add row to trucks data
+        trucks_data.append({
+            "Admin No.": admin_no,
+            "EIC": eic_value,
+            "Select Driver": "Select Driver",
+            "Available Drivers": driver_names,
+            "Personal Number": ""
+        })
+    
+    # Convert to DataFrame for editable table
+    trucks_df = pd.DataFrame(trucks_data)
+    
+    # Display interactive table
+    edited_trucks_df = st.data_editor(trucks_df, 
+                                      column_config={
+                                          "Select Driver": st.column_config.SelectboxColumn("Select Driver", options=trucks_df["Available Drivers"].tolist()),
+                                          "Personal Number": st.column_config.TextColumn("Personal Number")
+                                      },
+                                      hide_index=True)
+    
+    # Allow Download of Edited Data
+    if st.button("Download Updated Data"):
+        edited_trucks_df.to_excel("Updated_Truck_Assignments.xlsx", index=False)
         st.success("Download Ready! Check your files.")
